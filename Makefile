@@ -1,19 +1,31 @@
-.PHONY: help build run test clean hooks
+.PHONY: help build run stop test clean hooks
+
+IMAGE_NAME := orders-microservice
+IMAGE_TAG ?= 0.1.0
 
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make build       - Instalar dependencias"
-	@echo "  make run         - Ejecutar aplicación"
+	@echo "  make build       - Construir imagen Docker del microservicio"
+	@echo "  make run         - Ejecutar contenedor Docker del microservicio"
+	@echo "  make stop        - Detener y eliminar el contenedor"
 	@echo "  make test        - Ejecutar tests"
 	@echo "  make clean       - Limpiar cache y archivos temporales"
 	@echo "  make hooks       - Instalar git hooks"
 
 build:
-	pip install -r requirements.txt
+	@echo "Construyendo imagen Docker $(IMAGE_NAME):$(IMAGE_TAG)..."
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 run:
-	@echo "Ejecutando aplicación localmente..."
-	python3 src/main.py
+	@echo "Ejecutando contenedor Docker $(IMAGE_NAME)..."
+	docker run -d \
+		-p 80:80 \
+		--name $(IMAGE_NAME) \
+		$(IMAGE_NAME):$(IMAGE_TAG)
+
+stop:
+	@echo "Deteniendo y eliminando contenedor $(IMAGE_NAME)..."
+	docker stop $(IMAGE_NAME) && docker rm $(IMAGE_NAME)
 
 test:
 	@echo "Ejecutando suite de pruebas..."

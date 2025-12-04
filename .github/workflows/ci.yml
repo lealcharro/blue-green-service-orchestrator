@@ -60,7 +60,7 @@ jobs:
 
       - name: Run tests
         run: |
-          if pytest tests/ -v --cov=app --cov-report=xml; then
+          if pytest test/ -v --cov=src --cov-report=xml; then
             echo "Tests ran successfully."
           else
             echo "No tests found. Creating empty coverage file."
@@ -71,3 +71,4 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: ./coverage.xml
+          token: ${{ secrets.CODECOV_TOKEN }}
