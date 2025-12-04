@@ -18,8 +18,8 @@ build:
 
 run:
 	@echo "Ejecutando contenedor Docker $(IMAGE_NAME)..."
-	docker run -d \
-		-p 80:80 \
+	docker run \
+		-p 8080:80 \
 		--name $(IMAGE_NAME) \
 		$(IMAGE_NAME):$(IMAGE_TAG)
 
