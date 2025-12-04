@@ -38,6 +38,9 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
 
+      - name: Create SBOM output directory
+        run: mkdir -p .evidence
+
       - name: Generate SBOM
         uses: anchore/sbom-action@v0
         with:
