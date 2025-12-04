@@ -11,9 +11,13 @@ help:
 build:
 	pip install -r requirements.txt
 
-run: # TODO
+run:
+	@echo "Ejecutando aplicación localmente..."
+	python3 src/main.py
 
-test: # TODO
+test:
+	@echo "Ejecutando suite de pruebas..."
+	pytest --cov=src test/
 
 clean:
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true

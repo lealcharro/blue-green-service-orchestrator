@@ -1,0 +1,32 @@
+[
+  {
+    "nombre": "Marco Serna",
+    "genero": "Masculino",
+    "edad": 45,
+    "especialidad": "Ingeniero de sistemas"
+  },
+  {
+    "nombre": "Tatiana Llontop",
+    "genero": "Feminina",
+    "edad": 21,
+    "especialidad": "Psicología"
+  },
+  {
+    "nombre": "Larissa Abanto",
+    "genero": "Feminina",
+    "edad": 20,
+    "especialidad": "Enfermería"
+  },
+  {
+    "nombre": "Mauricio Ayme",
+    "genero": "Masculino",
+    "edad": 23,
+    "especialidad": "Ingeniero eléctrico"
+  },
+  {
+    "nombre": "Flavio Chávez",
+    "genero": "Masculino",
+    "edad": 17,
+    "especialidad": "Ingeniero mecatrónico"
+  }
+]
