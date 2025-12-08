@@ -24,3 +24,6 @@ spec:
         image: orders-microservice:v2
         ports:
         - containerPort: 80
+        env:
+        - name: VERSION
+          value: "v2"
