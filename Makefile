@@ -1,31 +1,36 @@
-.PHONY: help build run stop test clean hooks
+.PHONY: help build run stop test clean hooks setup verify port-forward
 
 IMAGE_NAME := orders-microservice
-IMAGE_TAG ?= 0.1.0
+IMAGE_TAG ?= v1
 
 help:
 	@echo "Comandos disponibles:"
+	@echo "  make setup       - Iniciar Minikube"
 	@echo "  make build       - Construir imagen Docker del microservicio"
-	@echo "  make run         - Ejecutar contenedor Docker del microservicio"
-	@echo "  make stop        - Detener y eliminar el contenedor"
+	@echo "  make run         - Desplegar la aplicación en Kubernetes"
+	@echo "  make stop        - Eliminar recursos de Kubernetes y detener Minikube"
 	@echo "  make test        - Ejecutar tests"
 	@echo "  make clean       - Limpiar cache y archivos temporales"
 	@echo "  make hooks       - Instalar git hooks"
+	@echo "  make verify      - Ejecutar script de smoke test (requiere VERSION=v1|v2)"
+	@echo "  make port-forward - Iniciar port-forwarding para orders-service"
+
+setup:
+	@echo "Iniciando Minikube..."
+	minikube start
 
 build:
 	@echo "Construyendo imagen Docker $(IMAGE_NAME):$(IMAGE_TAG)..."
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	eval $$(minikube docker-env) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 run:
-	@echo "Ejecutando contenedor Docker $(IMAGE_NAME)..."
-	docker run \
-		-p 8080:80 \
-		--name $(IMAGE_NAME) \
-		$(IMAGE_NAME):$(IMAGE_TAG)
+	@echo "Desplegando la aplicación en Kubernetes..."
+	kubectl apply -f k8s/
 
 stop:
-	@echo "Deteniendo y eliminando contenedor $(IMAGE_NAME)..."
-	docker stop $(IMAGE_NAME) && docker rm $(IMAGE_NAME)
+	@echo "Eliminando recursos de Kubernetes y deteniendo Minikube..."
+	-kubectl delete -f k8s/
+	minikube stop
 
 test:
 	@echo "Ejecutando suite de pruebas..."
@@ -39,3 +44,7 @@ clean:
 
 hooks:
 	pre-commit install -c hooks/.pre-commit-config.yaml
+
+port-forward:
+	@echo "Iniciando port-forwarding para orders-service en localhost:8080. Presiona Ctrl+C para detener."
+	kubectl port-forward svc/orders-service 8080:80
