@@ -1,4 +1,4 @@
-.PHONY: help build run stop test clean hooks
+.PHONY: help build run stop test clean hooks k8s-apply
 
 IMAGE_NAME := orders-microservice
 IMAGE_TAG ?= 0.1.0
@@ -11,6 +11,7 @@ help:
 	@echo "  make test        - Ejecutar tests"
 	@echo "  make clean       - Limpiar cache y archivos temporales"
 	@echo "  make hooks       - Instalar git hooks"
+	@echo "  make k8s-apply   - Aplicar manifiestos de Kubernetes"
 
 build:
 	@echo "Construyendo imagen Docker $(IMAGE_NAME):$(IMAGE_TAG)..."
@@ -39,3 +40,7 @@ clean:
 
 hooks:
 	pre-commit install -c hooks/.pre-commit-config.yaml
+
+k8s-apply:
+	@echo "Aplicando manifiestos de Kubernetes..."
+	kubectl apply -f k8s/
