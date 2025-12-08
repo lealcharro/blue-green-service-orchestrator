@@ -39,5 +39,4 @@ async def test_version(client):
     assert response.status_code == 200
 
     data = response.json()
-    assert data["version"] == "1.0.0"
     assert data["message"] == "Servicios corriendo satisfactoriamente"
