@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orders-v1
+  labels:
+    app: orders
+    version: v1
+    color: blue
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: orders
+      version: v1
+  template:
+    metadata:
+      labels:
+        app: orders
+        version: v1
+        color: blue
+    spec:
+      containers:
+      - name: orders
+        image: orders-microservice:v1
+        ports:
+        - containerPort: 80
