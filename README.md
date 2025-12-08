@@ -20,27 +20,42 @@ Un equipo de plataforma quiere estandarizar la forma de hacer blue/green deploys
 - Pipeline de seguridad con Trivy y SBOM
 - Makefile para automatización
 
+## Sprint 2
+
+- Manifests de Kubernetes para estrategia Blue/Green
+- Deployment Blue (v1) y Green (v2) en paralelo
+- Service con selector dinámico para switch de tráfico
+- Script de verificación (smoke tests) con `blue_green_verify.py`
+- Configuración de Minikube/Kind para cluster local
+- Port-forwarding para acceso local al servicio
+- Comandos Makefile para gestión completa del ciclo Blue/Green
+
 ## Uso Rápido
 
+### Despliegue Blue/Green (Kubernetes)
 ```bash
-# Instalar hooks
-make hooks
-
-# Ejecutar tests
-make test
-
-# Build y run
-make build
+# 1. Iniciar Minikube
+make setup
+# 2. Construir imagen v1 (Blue)
+make build IMAGE_TAG=v1
+# 3. Construir imagen v2 (Green)
+make build IMAGE_TAG=v2
+# 4. Desplegar ambas versiones en K8s
 make run
-
-# Probar endpoints
-curl http://localhost:8080/health
-curl http://localhost:8080/orders
+# 5. Port-forward para acceso local (en otra terminal)
+make port-forward
+# 6. Verificar versión activa (Blue=v1 inicialmente)
 curl http://localhost:8080/version
-
-# Limpiar
+# 7. Smoke test de versión específica
+URL=http://localhost:8080 VERSION=v1 python scripts/blue_green_verify.py
+# 8. Switch de Blue a Green (manual)
+kubectl patch service orders-service -p '{"spec":{"selector":{"color":"green"}}}'
+# 9. Verificar cambio a Green (v2)
+curl http://localhost:8080/version
+# 10. Rollback a Blue (si es necesario)
+kubectl patch service orders-service -p '{"spec":{"selector":{"color":"blue"}}}'
+# Limpiar todo
 make stop
-make clean
 ```
 
 ## Pipelines CI/CD
@@ -70,12 +85,14 @@ Ejecuta en push a `main`/`develop` o manualmente:
 ## Makefile
 
 - `make help` - Muestra comandos disponibles
-- `make build` - Construye imagen Docker
-- `make run` - Ejecuta contenedor en puerto 8080
-- `make stop` - Detiene contenedor
+- `make setup` - Inicia Minikube
+- `make build` - Construye imagen Docker (uso: `IMAGE_TAG=v1`)
+- `make run` - Despliega aplicación en Kubernetes
+- `make stop` - Elimina recursos de K8s y detiene Minikube
 - `make test` - Ejecuta tests con cobertura
 - `make clean` - Elimina archivos temporales
 - `make hooks` - Instala pre-commit hooks
+- `make port-forward` - Port-forward de orders-service a localhost:8080
 
 ## Estructura
 
@@ -86,6 +103,12 @@ Ejecuta en push a `main`/`develop` o manualmente:
 │   └── build_scan_sbom.yml    # Security pipeline
 ├── hooks/
 │   └── .pre-commit-config.yaml
+├── k8s/                       # Manifests Kubernetes
+│   ├── orders-v1-blue.yaml    # Deployment Blue (v1)
+│   ├── orders-v2-green.yaml   # Deployment Green (v2)
+│   └── service.yaml           # Service con selector dinámico
+├── scripts/
+│   └── blue_green_verify.py   # Script de smoke tests
 ├── src/
 │   ├── main.py                # FastAPI app
 │   ├── config.py
@@ -119,6 +142,30 @@ Suite de pruebas con pytest:
 - **test_endpoints.py**: Tests para `/health`, `/orders`, `/version`
 - Ejecuta con cobertura usando `pytest --cov`
 
+### k8s/
+Manifests de Kubernetes para estrategia Blue/Green:
+- **orders-v1-blue.yaml**: Deployment con 3 réplicas, label `color: blue`, variable `VERSION=v1`
+- **orders-v2-green.yaml**: Deployment con 3 réplicas, label `color: green`, variable `VERSION=v2`
+- **service.yaml**: Service con selector `color: blue` (por defecto), exponiendo puerto 80
+
+### scripts/
+Script de verificación y smoke tests:
+- **blue_green_verify.py**: Valida que la versión desplegada sea la esperada
+- Requiere variables de entorno: `URL` y `VERSION`
+- Hace petición a `/version` y compara con versión esperada
+- Retorna código de salida 0 (éxito) o 1 (fallo)
+- Uso: `URL=http://localhost:8080 VERSION=v1 python scripts/blue_green_verify.py`
+
+## Estrategia Blue/Green
+
+El proyecto implementa un patrón de despliegue Blue/Green en Kubernetes:
+
+1. **Despliegues Paralelos**: Las versiones Blue (v1) y Green (v2) están desplegadas simultáneamente con 3 réplicas cada una
+2. **Switch de Tráfico**: El Service de Kubernetes usa labels (`color: blue` o `color: green`) para enrutar el tráfico
+3. **Sin Downtime**: El cambio de versión es instantáneo mediante `kubectl patch`
+4. **Rollback Rápido**: Si hay problemas, volver a la versión anterior es inmediato (un simple patch)
+5. **Verificación**: Script de smoke tests valida que la versión activa sea la correcta
+
 ## Evidencias DevSecOps
 
 Todas las evidencias de ejecución de herramientas DevSecOps se almacenan en `.evidence/`:
@@ -132,3 +179,4 @@ Todas las evidencias de ejecución de herramientas DevSecOps se almacenan en `.e
 ## Videos
 
 - **Sprint 1**: https://drive.google.com/file/d/1eFvE2q8g4w0fNAz9NkAlTg9-r5a8vSkM/view?usp=sharing
+- **Sprint 1**: https://drive.google.com/file/d/1DZHmfj29uhap1lofZWUzk3_UdyOWcXHo/view?usp=sharing
