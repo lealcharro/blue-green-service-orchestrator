@@ -8,63 +8,63 @@ on:
   workflow_dispatch:
 
 jobs:
-  create_cluster:
+  build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Create k8s Kind Cluster
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: 1. Create k8s Kind Cluster
         uses: helm/kind-action@v1.8.0
 
-  deploy_green:
-    runs-on: ubuntu-latest
-    needs: create_cluster
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      
-      - name: Build and Deploy
+      - name: 2. Build, Load and Deploy Green Version
         run: |
+          # Construir la imagen de Docker
           make build IMAGE_TAG=v2
-          kubectl apply -f k8s/orders-v2-green.yaml -f k8s/service-green.yaml
-  
-  verify_green:
-    runs-on: ubuntu-latest
-    needs: [create_cluster, deploy_green]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
 
-      - name: Set up Python
-        uses: actions/setup-python@v2
-        with:
-          python-version: '3.12'
+          # Esperar a que el cluster Kind esté completamente listo
+          echo "Esperando a que el cluster Kind esté listo..."
+          kubectl wait --for=condition=Ready nodes --all --timeout=120s
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+          # Cargar la imagen recién construida en el clúster de Kind
+          kind load docker-image orders-microservice:v2 --name chart-testing
 
-      - name: Verify green version
+          # Desplegar el service principal y la versión green
+          kubectl apply -f k8s/service.yaml -f k8s/orders-v2-green.yaml -f k8s/service-green.yaml
+
+          # Esperar a que los pods de green estén listos
+          echo "Esperando a que los pods estén Ready..."
+          kubectl wait --for=condition=Ready pods -l color=green --timeout=120s
+
+      - name: 3. Verify Green Deployment
+        id: verify_step
         run: |
+          pip install -r requirements.txt
           export URL="http://localhost:8081"
           export VERSION="v2"
           kubectl port-forward svc/orders-service-green 8081:80 &
-          sleep 5
+          
+          echo "Esperando a que el servicio esté disponible..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/health > /dev/null 2>&1; then
+              echo "Servicio disponible después de $i segundos"
+              break
+            fi
+            sleep 1
+          done
+          
           python scripts/blue_green_verify.py
-  
-  switch_or_rollback:
-    runs-on: ubuntu-latest
-    needs: [create_cluster, verify_green]
-    if: always()
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      
-      - name: Switch to green or rollback
+
+      - name: 4. Switch to Green or Rollback
+        if: always()
         run: |
-          if [[ "${{ needs.verify_green.result }}" == "success" ]]; then
-            echo "Switching to green"
+          if [[ "${{ steps.verify_step.outcome }}" == "success" ]]; then
+            echo "Verification successful. Switching to green..."
             python scripts/blue_green_switch.py green
             kubectl delete svc orders-service-green
           else
-            echo "Rolling back green deployment"
+            echo "Verification failed. Rolling back green deployment..."
             kubectl delete -f k8s/orders-v2-green.yaml
             kubectl delete svc orders-service-green
+            exit 1
           fi
