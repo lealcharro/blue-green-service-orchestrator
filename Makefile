@@ -1,7 +1,7 @@
 .PHONY: help build run stop test clean hooks setup verify port-forward
 
 IMAGE_NAME := orders-microservice
-IMAGE_TAG ?= v1
+IMAGE_TAG ?= v2
 
 help:
 	@echo "Comandos disponibles:"
@@ -21,7 +21,15 @@ setup:
 
 build:
 	@echo "Construyendo imagen Docker $(IMAGE_NAME):$(IMAGE_TAG)..."
-	eval $$(minikube docker-env) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+ifeq ($(CI),true)
+	@echo "Entorno CI detectado. Usando Docker y Kind."
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	@echo "Cargando imagen en el clúster de Kind..."
+	kind load docker-image $(IMAGE_NAME):$(IMAGE_TAG)
+else
+	@echo "Entorno local detectado. Usando Minikube."
+	eval $$(minikube -p minikube docker-env) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+endif
 
 run:
 	@echo "Desplegando la aplicación en Kubernetes..."
