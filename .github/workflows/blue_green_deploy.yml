@@ -1,0 +1,70 @@
+name: Blue-Green Deployment
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  create_cluster:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create k8s Kind Cluster
+        uses: helm/kind-action@v1.8.0
+
+  deploy_green:
+    runs-on: ubuntu-latest
+    needs: create_cluster
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Build and Deploy
+        run: |
+          make build IMAGE_TAG=v2
+          kubectl apply -f k8s/orders-v2-green.yaml -f k8s/service-green.yaml
+  
+  verify_green:
+    runs-on: ubuntu-latest
+    needs: [create_cluster, deploy_green]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify green version
+        run: |
+          export URL="http://localhost:8081"
+          export VERSION="v2"
+          kubectl port-forward svc/orders-service-green 8081:80 &
+          sleep 5
+          python scripts/blue_green_verify.py
+  
+  switch_or_rollback:
+    runs-on: ubuntu-latest
+    needs: [create_cluster, verify_green]
+    if: always()
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Switch to green or rollback
+        run: |
+          if [[ "${{ needs.verify_green.result }}" == "success" ]]; then
+            echo "Switching to green"
+            python scripts/blue_green_switch.py green
+            kubectl delete svc orders-service-green
+          else
+            echo "Rolling back green deployment"
+            kubectl delete -f k8s/orders-v2-green.yaml
+            kubectl delete svc orders-service-green
+          fi
