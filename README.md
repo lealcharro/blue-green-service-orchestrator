@@ -32,13 +32,14 @@ Un equipo de plataforma quiere estandarizar la forma de hacer blue/green deploys
 
 ## Sprint 3
 
-- Pipeline automatizado de despliegue Blue/Green (`blue_green_deploy.yml`)
-- Script de switch automatizado entre versiones (`blue_green_switch.py`)
+- Pipeline automatizado de despliegue Blue/Green con Kind (`blue_green_deploy.yml`)
+- Script de switch automático entre Blue/Green (`blue_green_switch.py`)
+- Service temporal Green para smoke tests (`service-green.yaml`)
+- Rollback automático si verificación falla
 - Pipeline de generación de evidencias (`generate_evidence.yml`)
-- Historial de despliegues Blue/Green (`blue-green-history.json`)
+- Historial JSON de despliegues (`blue-green-history.json`)
 - Detección automática de entorno CI/local en Makefile
-- Rollback automático en pipeline si fallan smoke tests
-- Evidencias almacenadas en `.evidence/`
+- Artifacts de evidencias
 
 ## Uso Rápido
 
@@ -82,7 +83,17 @@ Ejecuta en push a `main`/`develop` o manualmente:
 
 1. **build_scan_sbom** - Para construir imagen, escanear con Trivy y generar SBOM
 
-**Nota**: Este pipeline usa `runs-on: ubuntu-latest` pero interactúa con Docker.
+### blue_green_deploy.yml
+Ejecuta en push/PR a `main`, `develop`, `feature/switch_rollback` o manualmente:
+
+1. **build_and_deploy** - Crea cluster Kind, construye v2, despliega Green, verifica con smoke tests
+2. **Switch/Rollback** - Hace switch a Green si pasa verificación, rollback automático si falla
+
+### generate_evidence.yml
+Ejecuta automáticamente después de `blue_green_deploy.yml`:
+
+1. **generate_evidence** - Genera JSON con historial de despliegue (versiones, resultado, timestamp)
+2. Sube evidencias como artifact con retención de 30 días
 
 ## Pre-commit Hooks
 
@@ -108,17 +119,24 @@ Ejecuta en push a `main`/`develop` o manualmente:
 
 ```
 .
+├── .evidence/                 # Evidencias de despliegues
+│   ├── sbom.json              # Software Bill of Materials
+│   └── blue-green-history.json # Historial de despliegues Blue/Green
 ├── .github/workflows/
 │   ├── ci.yml                 # CI pipeline
-│   └── build_scan_sbom.yml    # Security pipeline
+│   ├── build_scan_sbom.yml    # Security pipeline
+│   ├── blue_green_deploy.yml  # Pipeline Blue/Green automatizado
+│   └── generate_evidence.yml  # Generador de evidencias
 ├── hooks/
 │   └── .pre-commit-config.yaml
 ├── k8s/                       # Manifests Kubernetes
 │   ├── orders-v1-blue.yaml    # Deployment Blue (v1)
 │   ├── orders-v2-green.yaml   # Deployment Green (v2)
-│   └── service.yaml           # Service con selector dinámico
+│   ├── service.yaml           # Service con selector dinámico
+│   └── service-green.yaml     # Service temporal para smoke tests Green
 ├── scripts/
-│   └── blue_green_verify.py   # Script de smoke tests
+│   ├── blue_green_verify.py   # Script de smoke tests
+│   └── blue_green_switch.py   # Script de switch automatizado
 ├── src/
 │   ├── main.py                # FastAPI app
 │   ├── config.py
@@ -181,10 +199,8 @@ El proyecto implementa un patrón de despliegue Blue/Green en Kubernetes:
 Todas las evidencias de ejecución de herramientas DevSecOps se almacenan en `.evidence/`:
 
 **GitHub Actions**:
-- `sbom.json` - Software Bill of Materials
-
-**Security Tab** (GitHub):
-- Resultados en: `Security > Code scanning`
+- `sbom.json` - Software Bill of Materials generado por Trivy
+- `blue-green-history.json` - Historial de despliegues Blue/Green (versiones, resultado, timestamp)
 
 ## Videos
 
