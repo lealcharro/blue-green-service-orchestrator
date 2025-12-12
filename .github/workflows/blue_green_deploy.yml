@@ -32,9 +32,33 @@ jobs:
           # Desplegar el service principal y la versión green
           kubectl apply -f k8s/service.yaml -f k8s/orders-v2-green.yaml -f k8s/service-green.yaml
 
+          # Mostrar información de debugging
+          echo "=== Información de debugging ==="
+          echo "Pods creados:"
+          kubectl get pods -l color=green
+          echo ""
+          echo "Descripción del deployment:"
+          kubectl describe deployment orders-v2
+          echo ""
+
           # Esperar a que los pods de green estén listos
           echo "Esperando a que los pods estén Ready..."
-          kubectl wait --for=condition=Ready pods -l color=green --timeout=120s
+          kubectl wait --for=condition=Ready pods -l color=green --timeout=300s || {
+            echo "=== TIMEOUT: Los pods no pasaron a Ready ==="
+            echo "Estado de los pods:"
+            kubectl get pods -l color=green -o wide
+            echo ""
+            echo "Eventos de los pods:"
+            kubectl get events --sort-by='.lastTimestamp' | grep orders-v2
+            echo ""
+            echo "Logs del primer pod:"
+            POD_NAME=$(kubectl get pods -l color=green -o jsonpath='{.items[0].metadata.name}')
+            kubectl logs $POD_NAME --tail=50 || echo "No se pudieron obtener logs"
+            echo ""
+            echo "Descripción del pod:"
+            kubectl describe pod $POD_NAME
+            exit 1
+          }
 
       - name: 3. Verify Green Deployment
         id: verify_step

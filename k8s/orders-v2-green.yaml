@@ -24,15 +24,31 @@ spec:
         image: orders-microservice:v2
         imagePullPolicy: Never
         ports:
-        - containerPort: 80
+        - containerPort: 8080
         env:
         - name: VERSION
           value: "v2"
+        startupProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 30
         readinessProbe:
           httpGet:
             path: /health
-            port: 80
-          initialDelaySeconds: 5
+            port: 8080
+          initialDelaySeconds: 0
           periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 0
+          periodSeconds: 10
           timeoutSeconds: 3
           failureThreshold: 3
