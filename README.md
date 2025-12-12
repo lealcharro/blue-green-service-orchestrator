@@ -30,6 +30,16 @@ Un equipo de plataforma quiere estandarizar la forma de hacer blue/green deploys
 - Port-forwarding para acceso local al servicio
 - Comandos Makefile para gestión completa del ciclo Blue/Green
 
+## Sprint 3
+
+- Pipeline automatizado de despliegue Blue/Green (`blue_green_deploy.yml`)
+- Script de switch automatizado entre versiones (`blue_green_switch.py`)
+- Pipeline de generación de evidencias (`generate_evidence.yml`)
+- Historial de despliegues Blue/Green (`blue-green-history.json`)
+- Detección automática de entorno CI/local en Makefile
+- Rollback automático en pipeline si fallan smoke tests
+- Evidencias almacenadas en `.evidence/`
+
 ## Uso Rápido
 
 ### Despliegue Blue/Green (Kubernetes)
@@ -179,4 +189,5 @@ Todas las evidencias de ejecución de herramientas DevSecOps se almacenan en `.e
 ## Videos
 
 - **Sprint 1**: https://drive.google.com/file/d/1eFvE2q8g4w0fNAz9NkAlTg9-r5a8vSkM/view?usp=sharing
-- **Sprint 1**: https://drive.google.com/file/d/1DZHmfj29uhap1lofZWUzk3_UdyOWcXHo/view?usp=sharing
+- **Sprint 2**: https://drive.google.com/file/d/1DZHmfj29uhap1lofZWUzk3_UdyOWcXHo/view?usp=sharing
+- **Sprint 3**: https://drive.google.com/file/d/1ZlwkM5mmx1xOef71uJuPJPgQqpMbO5Eu/view?usp=sharing
