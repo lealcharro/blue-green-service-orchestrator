@@ -1,0 +1,37 @@
+name: Generate Blue-Green Evidence
+
+on:
+  workflow_run:
+    workflows: ["Blue-Green Deployment"]
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  generate_evidence:
+    name: Generate Deployment Evidence
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create evidence directory
+        run: mkdir -p .evidence
+
+      - name: Generate deployment evidence JSON
+        run: |
+          cat > .evidence/blue-green-history.json << EOF
+          {
+            "old_version": "v1",
+            "new_version": "v2",
+            "result": "${{ github.event.workflow_run.conclusion }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%S.%6NZ)"
+          }
+          EOF
+
+          echo "Evidencia generada:"
+          cat .evidence/blue-green-history.json
+
+      - name: Upload evidence as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: blue-green-evidence
+          path: .evidence/blue-green-history.json
+          retention-days: 30

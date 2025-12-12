@@ -1,19 +1,20 @@
-.PHONY: help build run stop test clean hooks setup verify port-forward
+.PHONY: help build build-local run stop test clean hooks setup verify port-forward
 
 IMAGE_NAME := orders-microservice
-IMAGE_TAG ?= v1
+IMAGE_TAG ?= v2
 
 help:
 	@echo "Comandos disponibles:"
-	@echo "  make setup       - Iniciar Minikube"
-	@echo "  make build       - Construir imagen Docker del microservicio"
-	@echo "  make run         - Desplegar la aplicación en Kubernetes"
-	@echo "  make stop        - Eliminar recursos de Kubernetes y detener Minikube"
-	@echo "  make test        - Ejecutar tests"
-	@echo "  make clean       - Limpiar cache y archivos temporales"
-	@echo "  make hooks       - Instalar git hooks"
-	@echo "  make verify      - Ejecutar script de smoke test (requiere VERSION=v1|v2)"
-	@echo "  make port-forward - Iniciar port-forwarding para orders-service"
+	@echo "  make setup          - Iniciar Minikube"
+	@echo "  make build          - Construir imagen Docker (para CI/CD)"
+	@echo "  make build-local    - Construir imagen Docker (para entorno local con Minikube)"
+	@echo "  make run            - Desplegar la aplicación en Kubernetes"
+	@echo "  make stop           - Eliminar recursos de Kubernetes y detener Minikube"
+	@echo "  make test           - Ejecutar tests"
+	@echo "  make clean          - Limpiar cache y archivos temporales"
+	@echo "  make hooks          - Instalar git hooks"
+	@echo "  make verify         - Ejecutar script de smoke test (requiere VERSION=v1|v2)"
+	@echo "  make port-forward    - Iniciar port-forwarding para orders-service"
 
 setup:
 	@echo "Iniciando Minikube..."
@@ -21,7 +22,11 @@ setup:
 
 build:
 	@echo "Construyendo imagen Docker $(IMAGE_NAME):$(IMAGE_TAG)..."
-	eval $$(minikube docker-env) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+
+build-local:
+	@echo "Construyendo imagen Docker para Minikube..."
+	eval $$(minikube -p minikube docker-env) && docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 run:
 	@echo "Desplegando la aplicación en Kubernetes..."

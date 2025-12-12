@@ -42,9 +42,9 @@ RUN chown -R ${APP_USER}:${APP_USER} /app
 USER ${APP_USER}
 
 # Healthcheck para verificar que la aplicación esté funcionando
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl --fail http://localhost:80/health || exit 1
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 CMD curl --fail http://localhost:8080/health || exit 1
 
-EXPOSE 80
+EXPOSE 8080
 
 # Comando por defecto
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
